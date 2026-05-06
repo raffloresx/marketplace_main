@@ -1,0 +1,70 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Mi Dashboard</h2>
+    <a href="{% url 'product_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg"></i> + Nuevo Producto
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 80px;">Imagen</th>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for product in products %}
+                <tr>
+                    <td>
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" 
+                                 alt="{{ product.name }}" 
+                                 class="img-thumbnail" 
+                                 style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center border rounded" 
+                                 style="width: 60px; height: 60px;">
+                                <small class="text-muted">N/A</small>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold">{{ product.name }}</td>
+                    <td>${{ product.price }}</td>
+                    <td>
+                        <span class="badge {% if product.stock > 0 %}bg-info{% else %}bg-danger{% endif %}">
+                            {{ product.stock }} unidades
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'product_update' product.id %}" class="btn btn-outline-warning btn-sm">
+                                Editar
+                            </a>
+                            <a href="{% url 'product_delete' product.id %}" class="btn btn-outline-danger btn-sm">
+                                Eliminar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        No tienes productos registrados todavía.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
