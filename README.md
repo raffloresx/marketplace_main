@@ -653,13 +653,13 @@ def product_delete(request, pk):
 # 🚀 SPRINT 4 — Carrito de Compras Completo
 ## 🎯 Objetivos
 Implementar:
-✔ Agregar productos al carrito
-✔ Actualizar cantidades
-✔ Eliminar productos
-✔ Calcular subtotal y total
-✔ Persistencia en base de datos
-✔ UI Bootstrap 5.3
-✔ Seguridad por usuario autenticado
+* ✔ Agregar productos al carrito
+* ✔ Actualizar cantidades
+* ✔ Eliminar productos
+* ✔ Calcular subtotal y total
+* ✔ Persistencia en base de datos
+* ✔ UI Bootstrap 5.3
+* ✔ Seguridad por usuario autenticado
 
 ## 🧱 Arquitectura del carrito
 Ya tienes estos modelos:
