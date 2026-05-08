@@ -649,3 +649,287 @@ def product_delete(request, pk):
 4. Editar producto
 5. Eliminar producto
 6. Ver reflejado en home
+
+# 🚀 SPRINT 4 — Carrito de Compras Completo
+## 🎯 Objetivos
+Implementar:
+✔ Agregar productos al carrito
+✔ Actualizar cantidades
+✔ Eliminar productos
+✔ Calcular subtotal y total
+✔ Persistencia en base de datos
+✔ UI Bootstrap 5.3
+✔ Seguridad por usuario autenticado
+
+## 🧱 Arquitectura del carrito
+Ya tienes estos modelos:
+```bash
+Product
+Cart
+CartItem
+```
+Ahora agregaremos:
+
+* lógica de negocio
+* vistas
+* templates
+* cálculo de totales
+
+## 🧠 1. Mejorar modelos (IMPORTANTE)
+📁 store/models.py actualizar lo siguiente:
+```python
+class CartItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('cart', 'product')
+
+    def __str__(self):
+        return f"{self.product} x {self.quantity}"
+
+    # Actualizar
+    @property
+        def subtotal(self):
+            return self.product.price * self.quantity
+
+        def __str__(self):
+            return f"{self.product} x {self.quantity}"
+```
+Continuemos con 🧠 Agregar total al carrito, dentro del modelo Cart:
+```python
+class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='carts'
+    )  # 1:N
+
+    products = models.ManyToManyField(
+        Product,
+        through='CartItem',
+        related_name='carts'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Cart {self.id} - {self.user}"
+    
+    # Actualizar    
+    @property
+    def total(self):
+        return sum(item.subtotal for item in self.cartitem_set.all())
+```
+
+## ⚙️ 2. Migraciones de los modelos es decir las actualizaciones de la Base de Datos
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+## 🧱 3. URLs del carrito
+En 📁 store/urls.py actualizar debajo de CRUD de productos con lo siguiente:
+```python
+# Cart
+path('cart/', views.cart_detail, name='cart_detail'),
+path('cart/add/<uuid:product_id>/', views.add_to_cart, name='add_to_cart'),
+path('cart/remove/<uuid:item_id>/', views.remove_from_cart, name='remove_from_cart'),
+path('cart/update/<uuid:item_id>/', views.update_cart_item, name='update_cart_item'),
+```
+
+## 🧠 4. Vistas del carrito
+📁 store/views.py actualizar para la funcionalidad de carrito
+```python
+from .models import Cart, CartItem
+
+
+# =========================
+# 🛒 Ver carrito
+# =========================
+@login_required
+def cart_detail(request):
+    cart = Cart.objects.get(user=request.user)
+
+    return render(request, 'marketplace/cart_detail.html', {
+        'cart': cart
+    })
+
+
+# =========================
+# ➕ Agregar producto
+# =========================
+@login_required
+def add_to_cart(request, product_id):
+    cart = Cart.objects.get(user=request.user)
+
+    product = get_object_or_404(Product, id=product_id)
+
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product
+    )
+
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()
+
+    return redirect('cart_detail')
+
+
+# =========================
+# ❌ Eliminar item
+# =========================
+@login_required
+def remove_from_cart(request, item_id):
+    item = get_object_or_404(
+        CartItem,
+        id=item_id,
+        cart__user=request.user
+    )
+
+    item.delete()
+
+    return redirect('cart_detail')
+
+
+# =========================
+# 🔄 Actualizar cantidad
+# =========================
+@login_required
+def update_cart_item(request, item_id):
+    item = get_object_or_404(
+        CartItem,
+        id=item_id,
+        cart__user=request.user
+    )
+
+    if request.method == 'POST':
+        quantity = int(request.POST.get('quantity'))
+
+        if quantity > 0:
+            item.quantity = quantity
+            item.save()
+        else:
+            item.delete()
+
+    return redirect('cart_detail')
+```
+
+## 🎨 5. UI — Carrito
+📁 En templates/store/cart_detail.html crear este archivo y agregar:
+```python
+{% extends 'store/base.html' %}
+
+{% block content %}
+
+<h2 class="mb-4">Mi Carrito</h2>
+
+{% if cart.cartitem_set.all %}
+
+<table class="table table-bordered align-middle">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for item in cart.cartitem_set.all %}
+        <tr>
+
+            <td>{{ item.product.name }}</td>
+
+            <td>$ {{ item.product.price }}</td>
+
+            <td>
+                <form method="POST"
+                      action="{% url 'update_cart_item' item.id %}">
+                    {% csrf_token %}
+
+                    <input type="number"
+                           name="quantity"
+                           value="{{ item.quantity }}"
+                           min="1"
+                           class="form-control"
+                           style="width:90px;">
+
+                    <button class="btn btn-sm btn-primary mt-2">
+                        Actualizar
+                    </button>
+                </form>
+            </td>
+
+            <td>
+                $ {{ item.subtotal }}
+            </td>
+
+            <td>
+                <a href="{% url 'remove_from_cart' item.id %}"
+                   class="btn btn-danger btn-sm">
+                    Eliminar
+                </a>
+            </td>
+
+        </tr>
+    {% endfor %}
+
+    </tbody>
+</table>
+
+<div class="text-end">
+    <h3>Total: $ {{ cart.total }}</h3>
+</div>
+
+{% else %}
+
+<div class="alert alert-info">
+    Tu carrito está vacío
+</div>
+
+{% endif %}
+
+{% endblock %}
+```
+## 🛍️ 6. Botón “Agregar al carrito”
+📁 home.html Dentro de cada card actualiza:
+```html
+{% if user.is_authenticated %}
+    <a href="{% url 'add_to_cart' product.id %}"
+       class="btn btn-success mt-3">
+       Agregar al carrito
+    </a>
+{% endif %}
+```
+
+##🧭 7. Navbar con carrito
+📁 base.html actualiza con:
+```html
+<a href="{% url 'cart_detail' %}"
+   class="btn btn-outline-light btn-sm me-2">
+   Carrito
+</a>
+```
+## 🧪 9. Flujo de prueba
+1 Crear productos
+
+2 Iniciar sesión
+
+3 Agregar productos al carrito
+
+4 Actualizar cantidades
+
+5 Eliminar productos
+
+6 Ver total dinámico

@@ -93,3 +93,11 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.product} x {self.quantity}"
+
+    # Actualizar
+    @property
+        def subtotal(self):
+            return self.product.price * self.quantity
+
+        def __str__(self):
+            return f"{self.product} x {self.quantity}"
