@@ -1,6 +1,37 @@
 {% extends 'store/base.html' %}
 
 {% block content %}
+<form method="GET" class="row mb-4">
+
+    <div class="col-md-5">
+        <input type="text"
+               name="q"
+               class="form-control"
+               placeholder="Buscar productos...">
+    </div>
+
+    <div class="col-md-4">
+        <select name="category"
+                class="form-select">
+
+            <option value="">Todas las categorías</option>
+
+            {% for category in categories %}
+                <option value="{{ category.id }}">
+                    {{ category.name }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <button class="btn btn-dark w-100">
+            Buscar
+        </button>
+    </div>
+
+</form>
 <div class="container py-5">
     <h2 class="mb-4 fw-bold text-dark">Nuestros Productos</h2>
 
@@ -35,7 +66,12 @@
                 </div>
 
                 <div class="card-footer bg-transparent border-top-0 pb-3">
-                    <div class="d-grid">
+                    {% if user.is_authenticated %}
+                        <div class="d-grid">
+                            <a href="{% url 'add_to_cart' product.id %}" class="btn btn-outline-dark rounded-pill">Agregar al carrito</a>
+                        </div>
+                    {% endif %}
+                    <div class="d-grid pt-2">
                         <a href="#" class="btn btn-outline-dark rounded-pill">Ver Detalles</a>
                     </div>
                 </div>
@@ -48,6 +84,37 @@
         {% endfor %}
     </div>
 </div>
+<nav>
+
+<ul class="pagination justify-content-center">
+
+    {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.previous_page_number }}">
+               Anterior
+            </a>
+        </li>
+    {% endif %}
+
+    <li class="page-item active">
+        <span class="page-link">
+            {{ page_obj.number }}
+        </span>
+    </li>
+
+    {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.next_page_number }}">
+               Siguiente
+            </a>
+        </li>
+    {% endif %}
+
+</ul>
+
+</nav>
 
 <style>
     /* Efecto sutil al pasar el mouse */

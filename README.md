@@ -933,3 +933,166 @@ def update_cart_item(request, item_id):
 5 Eliminar productos
 
 6 Ver total dinámico
+
+## 🚀 SPRINT 5 — Optimización + UX + Dashboard Avanzado
+##🎯 Objetivos
+Implementar:
+* ✔ Búsqueda de productos
+* ✔ Filtros por categoría
+* ✔ Paginación
+* ✔ Dashboard con estadísticas
+* ✔ Mensajes dinámicos
+* ✔ Optimización ORM
+* ✔ Mejoras visuales Bootstrap
+* ✔ Validaciones de stock
+* ✔ Arquitectura más limpia
+
+## 🧱 1. BÚSQUEDA DE PRODUCTOS
+📁 views.py
+Actualiza home
+```python
+from django.core.paginator import Paginator
+from django.db.models import Q
+from .models import Category
+
+def home(request):
+
+    query = request.GET.get('q')
+    category_id = request.GET.get('category')
+
+    products = Product.objects.select_related(
+        'owner'
+    ).prefetch_related(
+        'categories'
+    ).all()
+
+    # =========================
+    # 🔎 Busqueda
+    # =========================
+    if query:
+        products = products.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query)
+        )
+
+    # =========================
+    # 🏷️ Filtro categoria
+    # =========================
+    if category_id:
+        products = products.filter(
+            categories__id=category_id
+        )
+
+    # =========================
+    # 📄 Paginacion
+    # =========================
+    paginator = Paginator(products, 6)
+
+    page_number = request.GET.get('page')
+
+    page_obj = paginator.get_page(page_number)
+
+    categories = Category.objects.all()
+
+    return render(request, 'store/home.html', {
+        'page_obj': page_obj,
+        'categories': categories
+    })
+```
+## 🎨 2. HOME PROFESIONAL
+
+📁 home.html
+🔎 Buscador + filtro
+
+Agrega arriba:
+
+```html
+<form method="GET" class="row mb-4">
+
+    <div class="col-md-5">
+        <input type="text"
+               name="q"
+               class="form-control"
+               placeholder="Buscar productos...">
+    </div>
+
+    <div class="col-md-4">
+        <select name="category"
+                class="form-select">
+
+            <option value="">Todas las categorías</option>
+
+            {% for category in categories %}
+                <option value="{{ category.id }}">
+                    {{ category.name }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <button class="btn btn-dark w-100">
+            Buscar
+        </button>
+    </div>
+
+</form>
+```
+## 📄 3. PAGINACIÓN
+
+Debajo del grid:
+```html
+<nav>
+
+<ul class="pagination justify-content-center">
+
+    {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.previous_page_number }}">
+               Anterior
+            </a>
+        </li>
+    {% endif %}
+
+    <li class="page-item active">
+        <span class="page-link">
+            {{ page_obj.number }}
+        </span>
+    </li>
+
+    {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.next_page_number }}">
+               Siguiente
+            </a>
+        </li>
+    {% endif %}
+
+</ul>
+
+</nav>
+```
+
+## 🧪 4. Flujo de prueba
+1 Has buquedas por artículo
+
+2 Has busquedas por categoría
+
+3 Agrega 20 articulos mas para probar paginación
+
+## 📊 Resultado Final 
+
+Felicidades Ahora tu marketplace ya tiene:
+```bash
+✔ Auth
+✔ Roles
+✔ CRUD Productos
+✔ Dashboard
+✔ Carrito
+✔ Filtros
+✔ Busqueda
+✔ Paginacion
+```
